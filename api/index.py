@@ -90,18 +90,16 @@ async def chat_endpoint(request: ChatRequest):
             # Protocol: 0:"<text>"\n
             for event in stream:
                 if "token" in event:
-                    token = event["token"]
-                    yield f'0:{json.dumps(token)}\n'
+                    yield event["token"]
                 elif "answer" in event:
                     answer_text = event["answer"]
-                    # Stream by words with slight delay for realistic typing animation
                     words = answer_text.split(" ")
                     for i, word in enumerate(words):
                         chunk = word + (" " if i < len(words) - 1 else "")
-                        yield f'0:{json.dumps(chunk)}\n'
+                        yield chunk
                         await asyncio.sleep(0.015)
         except Exception as e:
-            yield f'3:{json.dumps(str(e))}\n'
+            yield f"\n\n[Error: {str(e)}]"
 
     return StreamingResponse(
         generate(),
