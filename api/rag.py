@@ -237,6 +237,7 @@ def build_rag_chain(*, rebuild: bool = False, k: int = 5):
     retriever = build_vectorstore(rebuild=rebuild).as_retriever(
         search_kwargs={"k": k}
     )
+    api_key = get_api_key()
     llm = ChatGoogleGenerativeAI(model=CHAT_MODEL, temperature=0.2, google_api_key=api_key)
 
     condense = (
