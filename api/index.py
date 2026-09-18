@@ -14,11 +14,21 @@ CURRENT_DIR = Path(__file__).resolve().parent
 if str(CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(CURRENT_DIR))
 
-# Ensure GOOGLE_API_KEY is mapped from GEMINI_API_KEY if needed
-if "GEMINI_API_KEY" in os.environ and "GOOGLE_API_KEY" not in os.environ:
-    os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
-elif "GOOGLE_API_KEY" in os.environ and "GEMINI_API_KEY" not in os.environ:
-    os.environ["GEMINI_API_KEY"] = os.environ["GOOGLE_API_KEY"]
+def sync_env_keys():
+    found_key = (
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY")
+        or os.environ.get("GEMINI_KEY")
+        or os.environ.get("GOOGLE_KEY")
+    )
+    if found_key:
+        os.environ["GEMINI_API_KEY"] = found_key
+        os.environ["GOOGLE_API_KEY"] = found_key
+        os.environ["GOOGLE_GENERATIVE_AI_API_KEY"] = found_key
+    return found_key
+
+sync_env_keys()
 
 import rag
 from langchain_core.messages import HumanMessage, AIMessage
@@ -38,6 +48,7 @@ _engine = None
 
 def get_engine():
     global _engine
+    sync_env_keys()
     if _engine is None:
         _engine = rag.build_engine()
     return _engine
@@ -49,11 +60,16 @@ class ChatRequest(BaseModel):
 @app.get("/api")
 @app.get("/api/health")
 async def health_check():
-    has_key = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+    key = sync_env_keys()
+    key_names_present = [
+        k for k in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GENERATIVE_AI_API_KEY"]
+        if k in os.environ
+    ]
     return {
         "status": "healthy",
         "service": "TechMart RAG Assistant",
-        "api_key_configured": has_key,
+        "api_key_configured": bool(key),
+        "detected_key_names": key_names_present,
     }
 
 @app.post("/api/chat")

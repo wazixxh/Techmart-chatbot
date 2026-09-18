@@ -14,7 +14,13 @@ import os
 from dotenv import load_dotenv
 
 def get_api_key() -> str | None:
-    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    return (
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY")
+        or os.environ.get("GEMINI_KEY")
+        or os.environ.get("GOOGLE_KEY")
+    )
 
 load_dotenv()
 from langchain_community.vectorstores import FAISS
