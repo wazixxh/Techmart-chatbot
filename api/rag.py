@@ -10,7 +10,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+import os
 from dotenv import load_dotenv
+
+def get_api_key() -> str | None:
+    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+load_dotenv()
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
@@ -187,7 +193,8 @@ def describe_source(document: Document) -> str:
 
 def build_vectorstore(*, rebuild: bool = False) -> FAISS:
     """Load the saved FAISS index, or embed the source files and save one."""
-    embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL)
+    api_key = get_api_key()
+    embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL, google_api_key=api_key)
 
     if INDEX_DIR.exists() and not rebuild:
         # Safe here because this index is only ever written by build_vectorstore
@@ -224,7 +231,7 @@ def build_rag_chain(*, rebuild: bool = False, k: int = 5):
     retriever = build_vectorstore(rebuild=rebuild).as_retriever(
         search_kwargs={"k": k}
     )
-    llm = ChatGoogleGenerativeAI(model=CHAT_MODEL, temperature=0.2)
+    llm = ChatGoogleGenerativeAI(model=CHAT_MODEL, temperature=0.2, google_api_key=api_key)
 
     condense = (
         ChatPromptTemplate.from_messages(
